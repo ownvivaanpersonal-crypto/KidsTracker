@@ -103,9 +103,23 @@
         // --- Google API Initialization ---
         function gapiLoad() {
             gapi.load('client', initializeGapiClient);
+            initTokenClientWhenReady();
+        }
+
+        // The GSI script (accounts.google.com/gsi/client) loads independently
+        // of api.js, so `google.accounts` may not exist yet when this fires.
+        function initTokenClientWhenReady() {
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                setTimeout(initTokenClientWhenReady, 50);
+                return;
+            }
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
+                // FedCM lets Chrome/Edge grant a silent token renewal without
+                // relying on third-party cookies (which are now blocked by default),
+                // so restoring the session on refresh actually works.
+                use_fedcm_for_prompt: true,
                 callback: (tokenResponse) => {
                     if (tokenResponse.error !== undefined) {
                         const wasSilent = isSilentAuthAttempt;
@@ -144,6 +158,10 @@
 
         // Restore login without a popup if the 30-day session is still valid.
         function attemptSessionRestore() {
+            if (!tokenClient) {
+                setTimeout(attemptSessionRestore, 50);
+                return;
+            }
             const lastLoginTs = parseInt(localStorage.getItem(LOGIN_TS_KEY), 10);
             if (lastLoginTs && (Date.now() - lastLoginTs) < SESSION_DURATION_MS) {
                 isSilentAuthAttempt = true;
