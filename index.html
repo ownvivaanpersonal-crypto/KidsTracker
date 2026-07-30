@@ -28,6 +28,30 @@
             </div>
         </header>
 
+        <!-- Gift Points Modal -->
+        <div id="gift-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                <h2 class="text-lg font-bold text-pink-400 mb-4">🎁 Gift Bonus Points</h2>
+
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">From Parent</label>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button id="gift-parent-ajay" onclick="selectGiftParent('Ajay')" class="py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200">Ajay</button>
+                    <button id="gift-parent-kalpna" onclick="selectGiftParent('Kalpna')" class="py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200">Kalpna</button>
+                </div>
+
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Points</label>
+                <input id="gift-points-input" type="number" min="1" value="10" class="w-full mb-4 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 focus:outline-none focus:border-pink-500">
+
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Reason (optional)</label>
+                <input id="gift-reason-input" type="text" placeholder="e.g. Helped little sister" class="w-full mb-6 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 focus:outline-none focus:border-pink-500">
+
+                <div class="flex gap-3">
+                    <button onclick="closeGiftModal()" class="flex-1 py-2.5 rounded-xl font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition">Cancel</button>
+                    <button onclick="submitGiftPoints()" class="flex-1 py-2.5 rounded-xl font-medium bg-pink-600 hover:bg-pink-500 text-white transition">Add Points</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Day Selector -->
         <div class="mb-4">
             <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Select Day:</span>
@@ -61,10 +85,18 @@
         const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
         const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
+        // Keep the Google sync "logged in" for 30 days without re-prompting,
+        // by silently refreshing the access token in the background.
+        const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+        const LOGIN_TS_KEY = 'gsync_login_ts';
+        const TOKEN_REFRESH_INTERVAL_MS = 45 * 60 * 1000; // access tokens expire ~1hr
+
         let tokenClient;
         let gapiInited = false;
         let isAuthenticated = false;
-        
+        let isSilentAuthAttempt = false;
+        let tokenRefreshTimer = null;
+
         let points = 0;
         let trackerData = {}; // Stores all checkmarks locally before syncing
 
@@ -76,12 +108,20 @@
                 scope: SCOPES,
                 callback: (tokenResponse) => {
                     if (tokenResponse.error !== undefined) {
-                        throw (tokenResponse);
+                        const wasSilent = isSilentAuthAttempt;
+                        isSilentAuthAttempt = false;
+                        if (!wasSilent) {
+                            throw (tokenResponse);
+                        }
+                        return; // Silent refresh/restore failed quietly; user can log in manually.
                     }
+                    isSilentAuthAttempt = false;
                     isAuthenticated = true;
+                    localStorage.setItem(LOGIN_TS_KEY, Date.now().toString());
                     document.getElementById('auth-btn').innerText = "Syncing Active ✅";
                     document.getElementById('auth-btn').className = "px-4 py-3 rounded-xl bg-emerald-600 text-white font-bold transition shadow-lg cursor-default";
                     loadFromGoogleSheets();
+                    scheduleTokenRefresh();
                 },
             });
         }
@@ -92,12 +132,38 @@
                 discoveryDocs: [DISCOVERY_DOC],
             });
             gapiInited = true;
+            attemptSessionRestore();
         }
 
         function handleAuthClick() {
             if (gapiInited) {
+                isSilentAuthAttempt = false;
                 tokenClient.requestAccessToken({prompt: 'consent'});
             }
+        }
+
+        // Restore login without a popup if the 30-day session is still valid.
+        function attemptSessionRestore() {
+            const lastLoginTs = parseInt(localStorage.getItem(LOGIN_TS_KEY), 10);
+            if (lastLoginTs && (Date.now() - lastLoginTs) < SESSION_DURATION_MS) {
+                isSilentAuthAttempt = true;
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }
+
+        // Refresh the access token in the background so a stored 30-day session
+        // doesn't get interrupted by the ~1hr token expiry.
+        function scheduleTokenRefresh() {
+            if (tokenRefreshTimer) clearInterval(tokenRefreshTimer);
+            tokenRefreshTimer = setInterval(() => {
+                const lastLoginTs = parseInt(localStorage.getItem(LOGIN_TS_KEY), 10);
+                if (lastLoginTs && (Date.now() - lastLoginTs) < SESSION_DURATION_MS) {
+                    isSilentAuthAttempt = true;
+                    tokenClient.requestAccessToken({ prompt: '' });
+                } else {
+                    clearInterval(tokenRefreshTimer);
+                }
+            }, TOKEN_REFRESH_INTERVAL_MS);
         }
 
         // --- Fetch Data from Sheets ---
@@ -185,12 +251,26 @@
 
         const prizes = [
             { name: "TV Half an Hour", cost: 30 },
-            { name: "Chips", cost: 20 },
-            { name: "Chocolate", cost: 20 },
-            { name: "Sweet", cost: 20 },
-            { name: "Golgappe", cost: 20 },
+            { name: "Chips", cost: 20, oncePerMonth: true },
+            { name: "Chocolate", cost: 20, oncePerMonth: true },
+            { name: "Sweet", cost: 20, oncePerMonth: true },
+            { name: "Golgappe", cost: 20, oncePerMonth: true },
             { name: "Movie (Once a week - 2.5 hr)", cost: 150 }
         ];
+
+        const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+
+        function getPrizeCooldownKey(name) {
+            return `prize_last_redeemed_${name}`;
+        }
+
+        function getPrizeCooldownRemainingMs(prize) {
+            if (!prize.oncePerMonth) return 0;
+            const lastRedeemed = parseInt(trackerData[getPrizeCooldownKey(prize.name)], 10);
+            if (!lastRedeemed) return 0;
+            const remaining = MONTH_MS - (Date.now() - lastRedeemed);
+            return remaining > 0 ? remaining : 0;
+        }
 
         function isStudyTask(taskName) {
             return ["study", "hindi reading/writing", "maths 20 sums", "writing on a topic"].some(k => taskName.toLowerCase().includes(k));
@@ -229,7 +309,13 @@
 
         function updateUI() {
             document.getElementById('total-points').innerText = points + ' pts';
-            
+
+            // Highlight the active tab button
+            const activeTabClass = "px-5 py-2.5 rounded-xl font-medium transition shadow bg-indigo-600 text-white";
+            const inactiveTabClass = "px-5 py-2.5 rounded-xl font-medium transition shadow bg-slate-800 text-slate-300";
+            document.getElementById('btn-tasks').className = currentTab === 'tasks' ? activeTabClass : inactiveTabClass;
+            document.getElementById('btn-prizes').className = currentTab === 'prizes' ? activeTabClass : inactiveTabClass;
+
             // Build Day Selector
             const dayContainer = document.getElementById('day-selector');
             dayContainer.innerHTML = '';
@@ -310,24 +396,96 @@
         function renderPrizes() {
             const listEl = document.getElementById('prize-list');
             listEl.innerHTML = '';
+
+            const giftCard = document.createElement('div');
+            giftCard.className = "bg-pink-950/30 p-5 rounded-xl border border-pink-500/40 flex flex-col justify-between";
+            giftCard.innerHTML = `
+                <div><h3 class="font-bold text-base mb-1">🎁 Gift Points</h3><span class="text-pink-300 font-semibold text-sm">From Ajay or Kalpna</span></div>
+                <button onclick="openGiftModal()" class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition bg-pink-600 hover:bg-pink-500 text-white shadow-lg cursor-pointer">Add Gift Points</button>`;
+            listEl.appendChild(giftCard);
+
             prizes.forEach(prize => {
                 const canAfford = points >= prize.cost;
+                const cooldownMs = getPrizeCooldownRemainingMs(prize);
+                const onCooldown = cooldownMs > 0;
+                const canRedeem = canAfford && !onCooldown;
+
+                let buttonLabel = 'Redeem Prize';
+                if (onCooldown) {
+                    const daysLeft = Math.ceil(cooldownMs / (24 * 60 * 60 * 1000));
+                    buttonLabel = `Available in ${daysLeft}d`;
+                } else if (!canAfford) {
+                    buttonLabel = 'Not Enough Points';
+                }
+
                 const card = document.createElement('div');
                 card.className = "bg-slate-900/60 p-5 rounded-xl border border-slate-700 flex flex-col justify-between";
                 card.innerHTML = `
-                    <div><h3 class="font-bold text-base mb-1">${prize.name}</h3><span class="text-amber-400 font-semibold text-sm">${prize.cost} Points Deduction</span></div>
-                    <button onclick="redeemPrize(${prize.cost}, '${prize.name}')" class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition ${canAfford ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">${canAfford ? 'Redeem Prize' : 'Not Enough Points'}</button>`;
+                    <div><h3 class="font-bold text-base mb-1">${prize.name}</h3><span class="text-amber-400 font-semibold text-sm">${prize.cost} Points Deduction</span>${prize.oncePerMonth ? '<span class="block text-xs text-slate-500 mt-1">Once a month</span>' : ''}</div>
+                    <button ${canRedeem ? `onclick="redeemPrize('${prize.name}')"` : 'disabled'} class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition ${canRedeem ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">${buttonLabel}</button>`;
                 listEl.appendChild(card);
             });
         }
 
-        function redeemPrize(cost, name) {
-            if (points >= cost) {
-                points -= cost;
-                alert(`Successfully redeemed: ${name}! 🎉`);
-                updateUI();
-                saveToGoogleSheets(); // Auto-save
+        function redeemPrize(name) {
+            const prize = prizes.find(p => p.name === name);
+            if (!prize) return;
+            if (getPrizeCooldownRemainingMs(prize) > 0) return;
+            if (points < prize.cost) return;
+
+            points -= prize.cost;
+            if (prize.oncePerMonth) {
+                trackerData[getPrizeCooldownKey(prize.name)] = Date.now().toString();
             }
+            alert(`Successfully redeemed: ${prize.name}! 🎉`);
+            updateUI();
+            saveToGoogleSheets(); // Auto-save
+        }
+
+        // --- Gift Points (from Parents) ---
+        let selectedGiftParent = null;
+
+        function openGiftModal() {
+            selectedGiftParent = null;
+            document.getElementById('gift-points-input').value = 10;
+            document.getElementById('gift-reason-input').value = '';
+            document.getElementById('gift-parent-ajay').className = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
+            document.getElementById('gift-parent-kalpna').className = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
+            document.getElementById('gift-modal').classList.remove('hidden');
+        }
+
+        function closeGiftModal() {
+            document.getElementById('gift-modal').classList.add('hidden');
+        }
+
+        function selectGiftParent(parent) {
+            selectedGiftParent = parent;
+            const selectedClass = "py-2 rounded-xl font-medium text-sm transition bg-pink-600 text-white shadow-md";
+            const unselectedClass = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
+            document.getElementById('gift-parent-ajay').className = parent === 'Ajay' ? selectedClass : unselectedClass;
+            document.getElementById('gift-parent-kalpna').className = parent === 'Kalpna' ? selectedClass : unselectedClass;
+        }
+
+        function submitGiftPoints() {
+            const amount = parseInt(document.getElementById('gift-points-input').value) || 0;
+            const reason = document.getElementById('gift-reason-input').value.trim();
+
+            if (!selectedGiftParent) {
+                alert('Please select which parent is gifting points.');
+                return;
+            }
+            if (amount <= 0) {
+                alert('Please enter a positive number of points.');
+                return;
+            }
+
+            points += amount;
+            const logKey = `gift_${Date.now()}`;
+            trackerData[logKey] = `${selectedGiftParent}|${amount}|${reason}`;
+
+            closeGiftModal();
+            updateUI();
+            saveToGoogleSheets(); // Auto-save
         }
 
         updateUI();
