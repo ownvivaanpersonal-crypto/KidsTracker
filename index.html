@@ -17,16 +17,39 @@
                 <h1 class="text-2xl font-bold tracking-tight text-indigo-400">My Reward & Point Tracker</h1>
                 <p class="text-slate-400 text-sm">Data synced live with Google Sheets</p>
             </div>
-            <div class="flex items-center gap-3 w-full sm:w-auto">
-                <button id="auth-btn" onclick="handleAuthClick()" class="px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition shadow-lg">
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <input type="email" id="user-gmail" placeholder="Enter your Gmail" class="px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 w-full sm:w-auto" onchange="saveToGoogleSheets()">
+                <button id="auth-btn" onclick="handleAuthClick()" class="px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition shadow-lg w-full sm:w-auto">
                     Login to Google Sync
                 </button>
-                <div class="bg-indigo-600 px-6 py-3 rounded-xl text-center shadow-md flex-1 sm:flex-initial">
+                <div class="bg-indigo-600 px-6 py-3 rounded-xl text-center shadow-md flex-1 sm:flex-initial w-full sm:w-auto">
                     <span class="block text-xs uppercase tracking-wider font-semibold text-indigo-200">Total Points Carryover</span>
                     <span id="total-points" class="text-3xl font-extrabold">0 pts</span>
                 </div>
             </div>
         </header>
+
+        <!-- Kalpana & Ajay Gift Points Section -->
+        <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl mb-6">
+            <h2 class="text-lg font-bold text-amber-400 mb-3">🎁 Gift Points (Kalpana & Ajay)</h2>
+            <p class="text-xs text-slate-400 mb-4">Kalpana or Ajay can enter custom bonus points below. These points are strictly added to your total!</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-slate-300">Kalpana's Gift Points</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="kalpana-input" placeholder="Enter points" class="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-500">
+                        <button onclick="addGiftPoints('kalpana')" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-sm transition">Add</button>
+                    </div>
+                </div>
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 flex flex-col gap-2">
+                    <label class="text-sm font-semibold text-slate-300">Ajay's Gift Points</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="ajay-input" placeholder="Enter points" class="flex-1 px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-500">
+                        <button onclick="addGiftPoints('ajay')" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-sm transition">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Day Selector -->
         <div class="mb-4">
@@ -116,6 +139,8 @@
                         if (row.length === 2) {
                             if (row[0] === 'user_points') {
                                 points = parseInt(row[1]) || 0;
+                            } else if (row[0] === 'user_gmail') {
+                                document.getElementById('user-gmail').value = row[1];
                             } else {
                                 trackerData[row[0]] = row[1];
                             }
@@ -123,7 +148,6 @@
                     });
                 }
                 
-                // Weekly reset check after load
                 checkWeeklyReset();
                 updateUI();
             } catch (err) {
@@ -133,22 +157,25 @@
 
         // --- Save Data to Sheets ---
         async function saveToGoogleSheets() {
-            if (!isAuthenticated) return; // Only save if logged in
+            if (!isAuthenticated) return;
 
-            const values = [['user_points', points.toString()]];
+            const gmailValue = document.getElementById('user-gmail').value;
+            const values = [
+                ['user_points', points.toString()],
+                ['user_gmail', gmailValue]
+            ];
+            
             for (const [key, value] of Object.entries(trackerData)) {
                 values.push([key, value.toString()]);
             }
 
             const body = { values: values };
             try {
-                // Clear existing data first
                 await gapi.client.sheets.spreadsheets.values.clear({
                     spreadsheetId: SPREADSHEET_ID,
                     range: 'Sheet1!A:B',
                 });
                 
-                // Write new data
                 await gapi.client.sheets.spreadsheets.values.update({
                     spreadsheetId: SPREADSHEET_ID,
                     range: 'Sheet1!A:B',
@@ -227,6 +254,20 @@
             updateUI();
         }
 
+        function addGiftPoints(giver) {
+            const inputEl = document.getElementById(`${giver}-input`);
+            const val = parseInt(inputEl.value);
+            if (isNaN(val) || val <= 0) {
+                alert("Please enter a valid positive number!");
+                return;
+            }
+            points += val;
+            inputEl.value = '';
+            alert(`Added ${val} gift points from ${giver.charAt(0).toUpperCase() + giver.slice(1)}! 🌟`);
+            updateUI();
+            saveToGoogleSheets();
+        }
+
         function updateUI() {
             document.getElementById('total-points').innerText = points + ' pts';
             
@@ -284,7 +325,7 @@
                         trackerData[storageKey] = newState.toString();
                         points += newState ? 5 : -5;
                         updateUI();
-                        saveToGoogleSheets(); // Auto-save on click
+                        saveToGoogleSheets();
                     };
                     card.innerHTML = `
                         <span class="text-sm font-medium pr-4">${taskName}</span>
@@ -304,7 +345,7 @@
             trackerData[storageKey] = count.toString();
             points += change * 5;
             updateUI();
-            saveToGoogleSheets(); // Auto-save
+            saveToGoogleSheets();
         }
 
         function renderPrizes() {
@@ -326,7 +367,7 @@
                 points -= cost;
                 alert(`Successfully redeemed: ${name}! 🎉`);
                 updateUI();
-                saveToGoogleSheets(); // Auto-save
+                saveToGoogleSheets();
             }
         }
 
