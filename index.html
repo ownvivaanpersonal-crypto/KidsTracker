@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -79,7 +78,7 @@
         // 🛑 PASTE YOUR GOOGLE CREDENTIALS HERE 🛑
         // ==========================================
         const CLIENT_ID = '773316164141-odat1kef60rol219jis4n9r5hb9io1tm.apps.googleusercontent.com';
-        const API_KEY = 'AIzaSyB-•••••••••••••••••••••••••••••••';
+        const API_KEY = 'AIzaSyB-1qXsuSy_5rhq8ZNu4LM6lqEWJ2hhacU';
         const SPREADSHEET_ID = '1lUVO-Lkd67vIfaUhVMFWa6_oeTVyb9XcUaQMTuClWi0';
         // ==========================================
 
@@ -108,7 +107,7 @@
         }
 
         // The GSI script (accounts.google.com/gsi/client) loads independently
-        // of api.js, so google.accounts may not exist yet when this fires.
+        // of api.js, so `google.accounts` may not exist yet when this fires.
         function initTokenClientWhenReady() {
             if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
                 setTimeout(initTokenClientWhenReady, 50);
@@ -280,7 +279,7 @@
         const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
         function getPrizeCooldownKey(name) {
-            return prize_last_redeemed_${name};
+            return `prize_last_redeemed_${name}`;
         }
 
         function getPrizeCooldownRemainingMs(prize) {
@@ -309,7 +308,7 @@
             if (lastSavedWeek && lastSavedWeek !== currentWeek) {
                 daysOfWeek.forEach(day => {
                     const tasks = (day === "Sat" || day === "Sun") ? weekendTasks : weekdayTasks;
-                    tasks.forEach((_, index) => delete trackerData[task_${day}_${index}]);
+                    tasks.forEach((_, index) => delete trackerData[`task_${day}_${index}`]);
                 });
                 saveToGoogleSheets();
             }
@@ -340,7 +339,7 @@
             dayContainer.innerHTML = '';
             daysOfWeek.forEach(day => {
                 const btn = document.createElement('button');
-                btn.className = py-2 rounded-xl text-xs font-bold transition ${day === currentDay ? 'bg-indigo-500 text-white shadow-md scale-105' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'};
+                btn.className = `py-2 rounded-xl text-xs font-bold transition ${day === currentDay ? 'bg-indigo-500 text-white shadow-md scale-105' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`;
                 btn.innerText = day;
                 btn.onclick = () => selectDay(day);
                 dayContainer.appendChild(btn);
@@ -364,13 +363,13 @@
             listEl.innerHTML = '';
 
             tasks.forEach((taskName, index) => {
-                const storageKey = task_${currentDay}_${index};
+                const storageKey = `task_${currentDay}_${index}`;
                 const card = document.createElement('div');
                 const isStudy = isStudyTask(taskName);
 
                 if (isStudy) {
                     let count = parseInt(trackerData[storageKey]) || 0;
-                    card.className = flex items-center justify-between p-4 rounded-xl border transition ${count > 0 ? 'bg-indigo-950/40 border-indigo-500/50' : 'bg-slate-900/50 border-slate-700'};
+                    card.className = `flex items-center justify-between p-4 rounded-xl border transition ${count > 0 ? 'bg-indigo-950/40 border-indigo-500/50' : 'bg-slate-900/50 border-slate-700'}`;
                     card.innerHTML = `
                         <div class="flex flex-col"><span class="text-sm font-medium pr-2">${taskName}</span><span class="text-xs text-indigo-300">Unlimited Multiplier 📚</span></div>
                         <div class="flex items-center gap-2">
@@ -383,7 +382,7 @@
                         </div>`;
                 } else {
                     const isCompleted = trackerData[storageKey] === 'true';
-                    card.className = flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${isCompleted ? 'bg-emerald-950/40 border-emerald-500/50' : 'bg-slate-900/50 border-slate-700 hover:border-slate-500'};
+                    card.className = `flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${isCompleted ? 'bg-emerald-950/40 border-emerald-500/50' : 'bg-slate-900/50 border-slate-700 hover:border-slate-500'}`;
                     card.onclick = () => {
                         const newState = !(trackerData[storageKey] === 'true');
                         trackerData[storageKey] = newState.toString();
@@ -432,7 +431,7 @@
                 let buttonLabel = 'Redeem Prize';
                 if (onCooldown) {
                     const daysLeft = Math.ceil(cooldownMs / (24 * 60 * 60 * 1000));
-                    buttonLabel = Available in ${daysLeft}d;
+                    buttonLabel = `Available in ${daysLeft}d`;
                 } else if (!canAfford) {
                     buttonLabel = 'Not Enough Points';
                 }
@@ -441,7 +440,7 @@
                 card.className = "bg-slate-900/60 p-5 rounded-xl border border-slate-700 flex flex-col justify-between";
                 card.innerHTML = `
                     <div><h3 class="font-bold text-base mb-1">${prize.name}</h3><span class="text-amber-400 font-semibold text-sm">${prize.cost} Points Deduction</span>${prize.oncePerMonth ? '<span class="block text-xs text-slate-500 mt-1">Once a month</span>' : ''}</div>
-                    <button ${canRedeem ? onclick="redeemPrize('${prize.name}')" : 'disabled'} class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition ${canRedeem ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">${buttonLabel}</button>`;
+                    <button ${canRedeem ? `onclick="redeemPrize('${prize.name}')"` : 'disabled'} class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition ${canRedeem ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">${buttonLabel}</button>`;
                 listEl.appendChild(card);
             });
         }
@@ -456,7 +455,7 @@
             if (prize.oncePerMonth) {
                 trackerData[getPrizeCooldownKey(prize.name)] = Date.now().toString();
             }
-            alert(Successfully redeemed: ${prize.name}! 🎉);
+            alert(`Successfully redeemed: ${prize.name}! 🎉`);
             updateUI();
             saveToGoogleSheets(); // Auto-save
         }
@@ -499,8 +498,8 @@
             }
 
             points += amount;
-            const logKey = gift_${Date.now()};
-            trackerData[logKey] = ${selectedGiftParent}|${amount}|${reason};
+            const logKey = `gift_${Date.now()}`;
+            trackerData[logKey] = `${selectedGiftParent}|${amount}|${reason}`;
 
             closeGiftModal();
             updateUI();
@@ -510,531 +509,4 @@
         updateUI();
     </script>
 </body>
-</html>  allow to add and minus points from ajay and kalpna
-Found files, read index.html
-I'll add an Add/Subtract toggle to the gift modal so either parent can add or deduct points.
-Edited index.html, used 4 tools
-+37-5
-Already on the Prize Store tab. Let me open the modal.
-Used 2 tools
-Modal renders correctly with the new Add/Subtract toggle. Let me verify the Subtract state and a full flow.
-Used 3 tools
-Toggle works correctly — Ajay selected, Subtract mode active, button turns red and reads "Subtract Points". Let's confirm the submit actually deducts points.
-Used 5 tools
-The browser state got tangled from overlapping test clicks. Let me do a clean reload and retest carefully.
-Used 3 tools
-15 - 5 = 10, confirming subtract works correctly. Add/subtract logic and clamping are both verified. The gift modal now has an Add ➕ / Subtract ➖ toggle alongside the parent selector, so both Ajay and Kalpna can add or deduct points (clamped at 0) in KidsTracker/index.html.
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chore Tracker (Google Sheets Sync)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google API Scripts -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoad()"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-6 font-sans">
-    <div class="max-w-4xl mx-auto">
-        <!-- Header / Scoreboard -->
-        <header class="flex flex-col sm:flex-row justify-between items-center bg-slate-800 p-6 rounded-2xl shadow-lg mb-6 border border-slate-700 gap-4">
-            <div>
-                <h1 class="text-2xl font-bold tracking-tight text-indigo-400">My Reward & Point Tracker</h1>
-                <p class="text-slate-400 text-sm">Data synced live with Google Sheets</p>
-            </div>
-            <div class="flex items-center gap-3 w-full sm:w-auto">
-                <button id="auth-btn" onclick="handleAuthClick()" class="px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition shadow-lg">
-                    Login to Google Sync
-                </button>
-                <div class="bg-indigo-600 px-6 py-3 rounded-xl text-center shadow-md flex-1 sm:flex-initial">
-                    <span class="block text-xs uppercase tracking-wider font-semibold text-indigo-200">Total Points Carryover</span>
-                    <span id="total-points" class="text-3xl font-extrabold">0 pts</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Gift Points Modal -->
-        <div id="gift-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-                <h2 class="text-lg font-bold text-pink-400 mb-4">🎁 Gift Bonus Points</h2>
-
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">From Parent</label>
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    <button id="gift-parent-ajay" onclick="selectGiftParent('Ajay')" class="py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200">Ajay</button>
-                    <button id="gift-parent-kalpna" onclick="selectGiftParent('Kalpna')" class="py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200">Kalpna</button>
-                </div>
-
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Points</label>
-                <input id="gift-points-input" type="number" min="1" value="10" class="w-full mb-4 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 focus:outline-none focus:border-pink-500">
-
-                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Reason (optional)</label>
-                <input id="gift-reason-input" type="text" placeholder="e.g. Helped little sister" class="w-full mb-6 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-100 focus:outline-none focus:border-pink-500">
-
-                <div class="flex gap-3">
-                    <button onclick="closeGiftModal()" class="flex-1 py-2.5 rounded-xl font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition">Cancel</button>
-                    <button onclick="submitGiftPoints()" class="flex-1 py-2.5 rounded-xl font-medium bg-pink-600 hover:bg-pink-500 text-white transition">Add Points</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Day Selector -->
-        <div class="mb-4">
-            <span class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Select Day:</span>
-            <div id="day-selector" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
-        </div>
-
-        <!-- View Selector Tabs -->
-        <div class="flex flex-wrap gap-3 mb-6">
-            <button onclick="switchTab('tasks')" id="btn-tasks" class="px-5 py-2.5 rounded-xl font-medium transition shadow bg-indigo-600 text-white">Daily Routine</button>
-            <button onclick="switchTab('prizes')" id="btn-prizes" class="px-5 py-2.5 rounded-xl font-medium transition shadow bg-slate-800 text-slate-300">Prize Store 🎁</button>
-        </div>
-
-        <div id="tasks-container" class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
-            <div id="task-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-        </div>
-
-        <div id="prizes-container" class="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl hidden">
-            <div id="prize-list" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-        </div>
-    </div>
-
-    <script>
-        // ==========================================
-        // 🛑 PASTE YOUR GOOGLE CREDENTIALS HERE 🛑
-        // ==========================================
-        const CLIENT_ID = '773316164141-odat1kef60rol219jis4n9r5hb9io1tm.apps.googleusercontent.com';
-        const API_KEY = 'AIzaSyB-•••••••••••••••••••••••••••••••';
-        const SPREADSHEET_ID = '1lUVO-Lkd67vIfaUhVMFWa6_oeTVyb9XcUaQMTuClWi0';
-        // ==========================================
-
-        const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
-        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-
-        // Keep the Google sync "logged in" for 30 days without re-prompting,
-        // by silently refreshing the access token in the background.
-        const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
-        const LOGIN_TS_KEY = 'gsync_login_ts';
-        const TOKEN_REFRESH_INTERVAL_MS = 45 * 60 * 1000; // access tokens expire ~1hr
-
-        let tokenClient;
-        let gapiInited = false;
-        let isAuthenticated = false;
-        let isSilentAuthAttempt = false;
-        let tokenRefreshTimer = null;
-
-        let points = 0;
-        let trackerData = {}; // Stores all checkmarks locally before syncing
-
-        // --- Google API Initialization ---
-        function gapiLoad() {
-            gapi.load('client', initializeGapiClient);
-            initTokenClientWhenReady();
-        }
-
-        // The GSI script (accounts.google.com/gsi/client) loads independently
-        // of api.js, so google.accounts may not exist yet when this fires.
-        function initTokenClientWhenReady() {
-            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                setTimeout(initTokenClientWhenReady, 50);
-                return;
-            }
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                // FedCM lets Chrome/Edge grant a silent token renewal without
-                // relying on third-party cookies (which are now blocked by default),
-                // so restoring the session on refresh actually works.
-                use_fedcm_for_prompt: true,
-                callback: (tokenResponse) => {
-                    if (tokenResponse.error !== undefined) {
-                        const wasSilent = isSilentAuthAttempt;
-                        isSilentAuthAttempt = false;
-                        if (!wasSilent) {
-                            throw (tokenResponse);
-                        }
-                        return; // Silent refresh/restore failed quietly; user can log in manually.
-                    }
-                    isSilentAuthAttempt = false;
-                    isAuthenticated = true;
-                    localStorage.setItem(LOGIN_TS_KEY, Date.now().toString());
-                    document.getElementById('auth-btn').innerText = "Syncing Active ✅";
-                    document.getElementById('auth-btn').className = "px-4 py-3 rounded-xl bg-emerald-600 text-white font-bold transition shadow-lg cursor-default";
-                    loadFromGoogleSheets();
-                    scheduleTokenRefresh();
-                },
-            });
-        }
-
-        async function initializeGapiClient() {
-            await gapi.client.init({
-                apiKey: API_KEY,
-                discoveryDocs: [DISCOVERY_DOC],
-            });
-            gapiInited = true;
-            attemptSessionRestore();
-        }
-
-        function handleAuthClick() {
-            if (gapiInited) {
-                isSilentAuthAttempt = false;
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            }
-        }
-
-        // Restore login without a popup if the 30-day session is still valid.
-        function attemptSessionRestore() {
-            if (!tokenClient) {
-                setTimeout(attemptSessionRestore, 50);
-                return;
-            }
-            const lastLoginTs = parseInt(localStorage.getItem(LOGIN_TS_KEY), 10);
-            if (lastLoginTs && (Date.now() - lastLoginTs) < SESSION_DURATION_MS) {
-                isSilentAuthAttempt = true;
-                tokenClient.requestAccessToken({ prompt: '' });
-            }
-        }
-
-        // Refresh the access token in the background so a stored 30-day session
-        // doesn't get interrupted by the ~1hr token expiry.
-        function scheduleTokenRefresh() {
-            if (tokenRefreshTimer) clearInterval(tokenRefreshTimer);
-            tokenRefreshTimer = setInterval(() => {
-                const lastLoginTs = parseInt(localStorage.getItem(LOGIN_TS_KEY), 10);
-                if (lastLoginTs && (Date.now() - lastLoginTs) < SESSION_DURATION_MS) {
-                    isSilentAuthAttempt = true;
-                    tokenClient.requestAccessToken({ prompt: '' });
-                } else {
-                    clearInterval(tokenRefreshTimer);
-                }
-            }, TOKEN_REFRESH_INTERVAL_MS);
-        }
-
-        // --- Fetch Data from Sheets ---
-        async function loadFromGoogleSheets() {
-            try {
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Sheet1!A:B',
-                });
-                
-                const rows = response.result.values;
-                trackerData = {};
-                
-                if (rows && rows.length > 0) {
-                    rows.forEach(row => {
-                        if (row.length === 2) {
-                            if (row[0] === 'user_points') {
-                                points = parseInt(row[1]) || 0;
-                            } else {
-                                trackerData[row[0]] = row[1];
-                            }
-                        }
-                    });
-                }
-                
-                // Weekly reset check after load
-                checkWeeklyReset();
-                updateUI();
-            } catch (err) {
-                console.error("Error reading sheet:", err);
-            }
-        }
-
-        // --- Save Data to Sheets ---
-        async function saveToGoogleSheets() {
-            if (!isAuthenticated) return; // Only save if logged in
-
-            const values = [['user_points', points.toString()]];
-            for (const [key, value] of Object.entries(trackerData)) {
-                values.push([key, value.toString()]);
-            }
-
-            const body = { values: values };
-            try {
-                // Clear existing data first
-                await gapi.client.sheets.spreadsheets.values.clear({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Sheet1!A:B',
-                });
-                
-                // Write new data
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'Sheet1!A:B',
-                    valueInputOption: 'RAW',
-                    resource: body,
-                });
-            } catch (err) {
-                console.error("Error saving to sheet:", err);
-            }
-        }
-
-        // --- Core App Variables ---
-        const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-        const todayIndex = (new Date().getDay() + 6) % 7; 
-        let currentDay = daysOfWeek[todayIndex];
-        let currentTab = 'tasks';
-
-        const weekdayTasks = [
-            "Wake up by 6:45 am", "Brush your teeth", "Potty seat clean", 
-            "Clean bathroom after bath", "Get ready by 7:30 am & breakfast by 7:45 am", 
-            "Wearing socks by yourself", "Put shoes back in shoe rack", "Keep dress back after school within 15 mins", 
-            "Go to Telugu tuition without reminding", "Go to karate class without reminding", 
-            "Finish Telugu tuition directly after class", "Back home by 7 pm / Karate by 7:30 pm", 
-            "Study for half an hour", "Hindi reading/writing 15 mins", "Bag Setup", "Sleep by 9:30 pm"
-        ];
-
-        const weekendTasks = [
-            "Wake up by 8 am", "Brush your teeth", "Potty seat clean", 
-            "Clean bathroom & laundry bag", "Cycling half an hour", "Bath before 12 pm", 
-            "Takeout clothes from swimming bag in 15 mins", "Maths 20 sums", "Writing on a topic in Eng/Hindi", 
-            "Back home after play by 7 pm", "Study for half an hour", "Hindi reading/writing 15 mins", 
-            "Bag Setup", "Sleep by 9:30 pm"
-        ];
-
-        const prizes = [
-            { name: "TV Half an Hour", cost: 30 },
-            { name: "Chips", cost: 20, oncePerMonth: true },
-            { name: "Chocolate", cost: 20, oncePerMonth: true },
-            { name: "Sweet", cost: 20, oncePerMonth: true },
-            { name: "Golgappe", cost: 20, oncePerMonth: true },
-            { name: "Movie (Once a week - 2.5 hr)", cost: 150 }
-        ];
-
-        const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
-
-        function getPrizeCooldownKey(name) {
-            return prize_last_redeemed_${name};
-        }
-
-        function getPrizeCooldownRemainingMs(prize) {
-            if (!prize.oncePerMonth) return 0;
-            const lastRedeemed = parseInt(trackerData[getPrizeCooldownKey(prize.name)], 10);
-            if (!lastRedeemed) return 0;
-            const remaining = MONTH_MS - (Date.now() - lastRedeemed);
-            return remaining > 0 ? remaining : 0;
-        }
-
-        function isStudyTask(taskName) {
-            return ["study", "hindi reading/writing", "maths 20 sums", "writing on a topic"].some(k => taskName.toLowerCase().includes(k));
-        }
-
-        function getWeekNumber(d) {
-            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-            var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-            return d.getUTCFullYear() + "-W" + Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-        }
-
-        function checkWeeklyReset() {
-            const currentWeek = getWeekNumber(new Date());
-            const lastSavedWeek = trackerData['last_active_week'];
-
-            if (lastSavedWeek && lastSavedWeek !== currentWeek) {
-                daysOfWeek.forEach(day => {
-                    const tasks = (day === "Sat" || day === "Sun") ? weekendTasks : weekdayTasks;
-                    tasks.forEach((_, index) => delete trackerData[task_${day}_${index}]);
-                });
-                saveToGoogleSheets();
-            }
-            trackerData['last_active_week'] = currentWeek;
-        }
-
-        function switchTab(tab) {
-            currentTab = tab;
-            updateUI();
-        }
-
-        function selectDay(day) {
-            currentDay = day;
-            updateUI();
-        }
-
-        function updateUI() {
-            document.getElementById('total-points').innerText = points + ' pts';
-
-            // Highlight the active tab button
-            const activeTabClass = "px-5 py-2.5 rounded-xl font-medium transition shadow bg-indigo-600 text-white";
-            const inactiveTabClass = "px-5 py-2.5 rounded-xl font-medium transition shadow bg-slate-800 text-slate-300";
-            document.getElementById('btn-tasks').className = currentTab === 'tasks' ? activeTabClass : inactiveTabClass;
-            document.getElementById('btn-prizes').className = currentTab === 'prizes' ? activeTabClass : inactiveTabClass;
-
-            // Build Day Selector
-            const dayContainer = document.getElementById('day-selector');
-            dayContainer.innerHTML = '';
-            daysOfWeek.forEach(day => {
-                const btn = document.createElement('button');
-                btn.className = py-2 rounded-xl text-xs font-bold transition ${day === currentDay ? 'bg-indigo-500 text-white shadow-md scale-105' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'};
-                btn.innerText = day;
-                btn.onclick = () => selectDay(day);
-                dayContainer.appendChild(btn);
-            });
-
-            if (currentTab === 'prizes') {
-                document.getElementById('tasks-container').classList.add('hidden');
-                document.getElementById('prizes-container').classList.remove('hidden');
-                renderPrizes();
-            } else {
-                document.getElementById('tasks-container').classList.remove('hidden');
-                document.getElementById('prizes-container').classList.add('hidden');
-                renderTasks();
-            }
-        }
-
-        function renderTasks() {
-            const listEl = document.getElementById('task-list');
-            const isWeekend = currentDay === "Sat" || currentDay === "Sun";
-            const tasks = isWeekend ? weekendTasks : weekdayTasks;
-            listEl.innerHTML = '';
-
-            tasks.forEach((taskName, index) => {
-                const storageKey = task_${currentDay}_${index};
-                const card = document.createElement('div');
-                const isStudy = isStudyTask(taskName);
-
-                if (isStudy) {
-                    let count = parseInt(trackerData[storageKey]) || 0;
-                    card.className = flex items-center justify-between p-4 rounded-xl border transition ${count > 0 ? 'bg-indigo-950/40 border-indigo-500/50' : 'bg-slate-900/50 border-slate-700'};
-                    card.innerHTML = `
-                        <div class="flex flex-col"><span class="text-sm font-medium pr-2">${taskName}</span><span class="text-xs text-indigo-300">Unlimited Multiplier 📚</span></div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs px-2.5 py-1 rounded-full font-bold ${count > 0 ? 'bg-indigo-500/30 text-indigo-300' : 'bg-slate-800 text-slate-400'}">+${count * 5} pts</span>
-                            <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-                                <button onclick="adjustStudyPoints('${storageKey}', -1)" class="w-7 h-7 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-sm">-</button>
-                                <span class="w-6 text-center text-sm font-bold">${count}</span>
-                                <button onclick="adjustStudyPoints('${storageKey}', 1)" class="w-7 h-7 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm">+</button>
-                            </div>
-                        </div>`;
-                } else {
-                    const isCompleted = trackerData[storageKey] === 'true';
-                    card.className = flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${isCompleted ? 'bg-emerald-950/40 border-emerald-500/50' : 'bg-slate-900/50 border-slate-700 hover:border-slate-500'};
-                    card.onclick = () => {
-                        const newState = !(trackerData[storageKey] === 'true');
-                        trackerData[storageKey] = newState.toString();
-                        points += newState ? 5 : -5;
-                        updateUI();
-                        saveToGoogleSheets(); // Auto-save on click
-                    };
-                    card.innerHTML = `
-                        <span class="text-sm font-medium pr-4">${taskName}</span>
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs px-2.5 py-1 rounded-full font-bold ${isCompleted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}">+5 pts</span>
-                            <div class="w-6 h-6 rounded-lg border flex items-center justify-center ${isCompleted ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold' : 'border-slate-600'}">${isCompleted ? '✓' : ''}</div>
-                        </div>`;
-                }
-                listEl.appendChild(card);
-            });
-        }
-
-        function adjustStudyPoints(storageKey, change) {
-            let count = parseInt(trackerData[storageKey]) || 0;
-            if (count + change < 0) return;
-            count += change;
-            trackerData[storageKey] = count.toString();
-            points += change * 5;
-            updateUI();
-            saveToGoogleSheets(); // Auto-save
-        }
-
-        function renderPrizes() {
-            const listEl = document.getElementById('prize-list');
-            listEl.innerHTML = '';
-
-            const giftCard = document.createElement('div');
-            giftCard.className = "bg-pink-950/30 p-5 rounded-xl border border-pink-500/40 flex flex-col justify-between";
-            giftCard.innerHTML = `
-                <div><h3 class="font-bold text-base mb-1">🎁 Gift Points</h3><span class="text-pink-300 font-semibold text-sm">From Ajay or Kalpna</span></div>
-                <button onclick="openGiftModal()" class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition bg-pink-600 hover:bg-pink-500 text-white shadow-lg cursor-pointer">Add Gift Points</button>`;
-            listEl.appendChild(giftCard);
-
-            prizes.forEach(prize => {
-                const canAfford = points >= prize.cost;
-                const cooldownMs = getPrizeCooldownRemainingMs(prize);
-                const onCooldown = cooldownMs > 0;
-                const canRedeem = canAfford && !onCooldown;
-
-                let buttonLabel = 'Redeem Prize';
-                if (onCooldown) {
-                    const daysLeft = Math.ceil(cooldownMs / (24 * 60 * 60 * 1000));
-                    buttonLabel = Available in ${daysLeft}d;
-                } else if (!canAfford) {
-                    buttonLabel = 'Not Enough Points';
-                }
-
-                const card = document.createElement('div');
-                card.className = "bg-slate-900/60 p-5 rounded-xl border border-slate-700 flex flex-col justify-between";
-                card.innerHTML = `
-                    <div><h3 class="font-bold text-base mb-1">${prize.name}</h3><span class="text-amber-400 font-semibold text-sm">${prize.cost} Points Deduction</span>${prize.oncePerMonth ? '<span class="block text-xs text-slate-500 mt-1">Once a month</span>' : ''}</div>
-                    <button ${canRedeem ? onclick="redeemPrize('${prize.name}')" : 'disabled'} class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition ${canRedeem ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg cursor-pointer' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">${buttonLabel}</button>`;
-                listEl.appendChild(card);
-            });
-        }
-
-        function redeemPrize(name) {
-            const prize = prizes.find(p => p.name === name);
-            if (!prize) return;
-            if (getPrizeCooldownRemainingMs(prize) > 0) return;
-            if (points < prize.cost) return;
-
-            points -= prize.cost;
-            if (prize.oncePerMonth) {
-                trackerData[getPrizeCooldownKey(prize.name)] = Date.now().toString();
-            }
-            alert(Successfully redeemed: ${prize.name}! 🎉);
-            updateUI();
-            saveToGoogleSheets(); // Auto-save
-        }
-
-        // --- Gift Points (from Parents) ---
-        let selectedGiftParent = null;
-
-        function openGiftModal() {
-            selectedGiftParent = null;
-            document.getElementById('gift-points-input').value = 10;
-            document.getElementById('gift-reason-input').value = '';
-            document.getElementById('gift-parent-ajay').className = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
-            document.getElementById('gift-parent-kalpna').className = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
-            document.getElementById('gift-modal').classList.remove('hidden');
-        }
-
-        function closeGiftModal() {
-            document.getElementById('gift-modal').classList.add('hidden');
-        }
-
-        function selectGiftParent(parent) {
-            selectedGiftParent = parent;
-            const selectedClass = "py-2 rounded-xl font-medium text-sm transition bg-pink-600 text-white shadow-md";
-            const unselectedClass = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
-            document.getElementById('gift-parent-ajay').className = parent === 'Ajay' ? selectedClass : unselectedClass;
-            document.getElementById('gift-parent-kalpna').className = parent === 'Kalpna' ? selectedClass : unselectedClass;
-        }
-
-        function submitGiftPoints() {
-            const amount = parseInt(document.getElementById('gift-points-input').value) || 0;
-            const reason = document.getElementById('gift-reason-input').value.trim();
-
-            if (!selectedGiftParent) {
-                alert('Please select which parent is gifting points.');
-                return;
-            }
-            if (amount <= 0) {
-                alert('Please enter a positive number of points.');
-                return;
-            }
-
-            points += amount;
-            const logKey = gift_${Date.now()};
-            trackerData[logKey] = ${selectedGiftParent}|${amount}|${reason};
-
-            closeGiftModal();
-            updateUI();
-            saveToGoogleSheets(); // Auto-save
-        }
-
-        updateUI();
-    </script>
-</body>
-</html>  
+</html>
