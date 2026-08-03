@@ -31,12 +31,18 @@
         <!-- Gift Points Modal -->
         <div id="gift-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
             <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-                <h2 class="text-lg font-bold text-pink-400 mb-4">🎁 Gift Bonus Points</h2>
+                <h2 id="gift-modal-title" class="text-lg font-bold text-pink-400 mb-4">🎁 Gift Bonus Points</h2>
 
                 <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">From Parent</label>
                 <div class="grid grid-cols-2 gap-2 mb-4">
                     <button id="gift-parent-ajay" onclick="selectGiftParent('Ajay')" class="py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200">Ajay</button>
                     <button id="gift-parent-kalpna" onclick="selectGiftParent('Kalpna')" class="py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200">Kalpna</button>
+                </div>
+
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Type</label>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button id="gift-action-add" onclick="selectGiftAction('add')" class="py-2 rounded-xl font-medium text-sm transition bg-emerald-600 text-white shadow-md">Bonus ➕</button>
+                    <button id="gift-action-deduct" onclick="selectGiftAction('deduct')" class="py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200">Deduction ➖</button>
                 </div>
 
                 <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Points</label>
@@ -47,7 +53,7 @@
 
                 <div class="flex gap-3">
                     <button onclick="closeGiftModal()" class="flex-1 py-2.5 rounded-xl font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition">Cancel</button>
-                    <button onclick="submitGiftPoints()" class="flex-1 py-2.5 rounded-xl font-medium bg-pink-600 hover:bg-pink-500 text-white transition">Add Points</button>
+                    <button id="gift-submit-btn" onclick="submitGiftPoints()" class="flex-1 py-2.5 rounded-xl font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition">Add Points</button>
                 </div>
             </div>
         </div>
@@ -418,8 +424,8 @@
             const giftCard = document.createElement('div');
             giftCard.className = "bg-pink-950/30 p-5 rounded-xl border border-pink-500/40 flex flex-col justify-between";
             giftCard.innerHTML = `
-                <div><h3 class="font-bold text-base mb-1">🎁 Gift Points</h3><span class="text-pink-300 font-semibold text-sm">From Ajay or Kalpna</span></div>
-                <button onclick="openGiftModal()" class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition bg-pink-600 hover:bg-pink-500 text-white shadow-lg cursor-pointer">Add Gift Points</button>`;
+                <div><h3 class="font-bold text-base mb-1">🎯 Adjust Points</h3><span class="text-pink-300 font-semibold text-sm">Bonus or Deduction from Ajay or Kalpna</span></div>
+                <button onclick="openGiftModal()" class="mt-4 w-full py-2.5 rounded-xl font-medium text-sm transition bg-pink-600 hover:bg-pink-500 text-white shadow-lg cursor-pointer">Adjust Points</button>`;
             listEl.appendChild(giftCard);
 
             prizes.forEach(prize => {
@@ -460,15 +466,18 @@
             saveToGoogleSheets(); // Auto-save
         }
 
-        // --- Gift Points (from Parents) ---
+        // --- Adjust Points (Bonus or Deduction from Parents) ---
         let selectedGiftParent = null;
+        let selectedGiftAction = 'add';
 
         function openGiftModal() {
             selectedGiftParent = null;
+            selectedGiftAction = 'add';
             document.getElementById('gift-points-input').value = 10;
             document.getElementById('gift-reason-input').value = '';
             document.getElementById('gift-parent-ajay').className = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
             document.getElementById('gift-parent-kalpna').className = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
+            updateGiftActionUI();
             document.getElementById('gift-modal').classList.remove('hidden');
         }
 
@@ -484,12 +493,37 @@
             document.getElementById('gift-parent-kalpna').className = parent === 'Kalpna' ? selectedClass : unselectedClass;
         }
 
+        function selectGiftAction(action) {
+            selectedGiftAction = action;
+            updateGiftActionUI();
+        }
+
+        function updateGiftActionUI() {
+            const unselectedClass = "py-2 rounded-xl font-medium text-sm transition bg-slate-700 text-slate-200";
+            const addSelectedClass = "py-2 rounded-xl font-medium text-sm transition bg-emerald-600 text-white shadow-md";
+            const deductSelectedClass = "py-2 rounded-xl font-medium text-sm transition bg-amber-600 text-white shadow-md";
+            document.getElementById('gift-action-add').className = selectedGiftAction === 'add' ? addSelectedClass : unselectedClass;
+            document.getElementById('gift-action-deduct').className = selectedGiftAction === 'deduct' ? deductSelectedClass : unselectedClass;
+
+            const title = document.getElementById('gift-modal-title');
+            const submitBtn = document.getElementById('gift-submit-btn');
+            if (selectedGiftAction === 'deduct') {
+                title.innerText = '⚠️ Points Deduction';
+                submitBtn.className = "flex-1 py-2.5 rounded-xl font-medium bg-amber-600 hover:bg-amber-500 text-white transition";
+                submitBtn.innerText = 'Deduct Points';
+            } else {
+                title.innerText = '🎁 Gift Bonus Points';
+                submitBtn.className = "flex-1 py-2.5 rounded-xl font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition";
+                submitBtn.innerText = 'Add Points';
+            }
+        }
+
         function submitGiftPoints() {
             const amount = parseInt(document.getElementById('gift-points-input').value) || 0;
             const reason = document.getElementById('gift-reason-input').value.trim();
 
             if (!selectedGiftParent) {
-                alert('Please select which parent is gifting points.');
+                alert('Please select which parent is making this change.');
                 return;
             }
             if (amount <= 0) {
@@ -497,9 +531,10 @@
                 return;
             }
 
-            points += amount;
+            const signedAmount = selectedGiftAction === 'deduct' ? -amount : amount;
+            points = Math.max(0, points + signedAmount);
             const logKey = `gift_${Date.now()}`;
-            trackerData[logKey] = `${selectedGiftParent}|${amount}|${reason}`;
+            trackerData[logKey] = `${selectedGiftParent}|${signedAmount}|${reason}`;
 
             closeGiftModal();
             updateUI();
